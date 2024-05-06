@@ -1,35 +1,48 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import "./App.css";
+import { Route, RouterProvider, createRoutesFromElements } from "react-router";
+import { MantineProvider, createTheme } from "@mantine/core";
+import { createBrowserRouter } from "react-router-dom";
+import UserLayout from "./components/layout/UserLayout";
+import Home from "./pages/home/Home";
+import "@mantine/core/styles.css";
+import BlogDescription from "./pages/Blog description/BlogDescription";
+import Login from "./pages/login/Login";
+import Register from "./pages/login/Register";
+import VerifyEmail from "./pages/verify email/VerifyEmail";
+import ForgotPassword from "./pages/forgot password/ForgotPassword";
+import VerfiyEmailForgotPassword from "./pages/forgot password/VerfiyEmailForgotPassword";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const theme = createTheme({
+    /** Put your mantine theme override here */
+  });
+
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <Route path="/">
+        <Route path="/login" element={<Login />} />
+        <Route path="/Register" element={<Register />} />
+        <Route path="/verifyEmail/:token/:email" element={<VerifyEmail />} />
+        <Route path="/forgotPassword" element={<ForgotPassword />} />
+        <Route path="/forgotPassword/verify-email/:token/:email" element={<VerfiyEmailForgotPassword/>} />
+        <Route element={<UserLayout />}>
+          <Route path="/register" element={<BlogDescription />} />
+          <Route index element={<Home />} />
+          <Route path="/blog/:id" element={<BlogDescription />} />
+        </Route>
+        {/* <Route element={<GlobalLayout />}>
+          <Route path="/blog/:id" element={<BlogDescription />} />
+          <Route path="/create/blog" element={<CreateBlog />} />
+        </Route> */}
+      </Route>
+    )
+  );
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <MantineProvider theme={theme}>
+      <RouterProvider router={router} />
+    </MantineProvider>
+  );
 }
 
-export default App
+export default App;
