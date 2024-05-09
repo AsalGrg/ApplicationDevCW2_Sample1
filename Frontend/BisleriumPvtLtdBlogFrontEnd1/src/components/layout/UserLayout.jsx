@@ -7,7 +7,7 @@ const UserLayout = () => {
     <div>
         <Navbar/>
 
-        <div className=''>
+        <div className='mb-5'>
             <Outlet/>
         </div>
     </div>

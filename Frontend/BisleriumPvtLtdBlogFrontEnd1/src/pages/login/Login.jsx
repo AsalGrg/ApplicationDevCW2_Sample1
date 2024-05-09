@@ -1,4 +1,4 @@
-import { Button, TextInput } from "@mantine/core";
+import { Button, Text, TextInput } from "@mantine/core";
 import React, { useEffect, useState } from "react";
 import loginUser from "../../services/loginUser";
 import { useNavigate } from "react-router";
@@ -19,10 +19,10 @@ const Login = () => {
     );
 
     const data = await res.json();
-    console.log("hhhh")
     console.log(data)
 
     if(res.ok){
+      localStorage.setItem('token', data.accessToken)
       return navigate('/')
     }
   }
@@ -51,6 +51,11 @@ const Login = () => {
           value={password}
           onChange={(e)=>setpassword(e.target.value)}
           />
+
+          <Text
+          className="btn btn-link"
+          onClick={()=>navigate('/forgotPassword')}
+          >Forgot password?</Text>
 
           <Button
           onClick={handleLoginUser}

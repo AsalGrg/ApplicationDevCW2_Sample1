@@ -2,15 +2,16 @@ import { Button, TextInput } from "@mantine/core";
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import register_user from "../../services/registerUser";
+import add_admin from "../../services/addAdmin";
 
-const Register = () => {
+const RegisterAdmin = () => {
   const navigate = useNavigate();
   const [username, setusername] = useState("");
   const [password, setpassword] = useState("");
   const [email, setEmail] = useState("");
 
   async function handleRegisterUser() {
-    const res = await register_user({
+    const res = await add_admin({
       email: email,
       password: password,
       username: username,
@@ -19,7 +20,9 @@ const Register = () => {
 
     if (res.ok) {
       console.log('here')
-      return navigate(`/verifyEmail?email=${email}&token=`);
+      setusername('');
+      setpassword('');
+      setEmail('')
     }
   }
   return (
@@ -30,13 +33,13 @@ const Register = () => {
       }}
     >
       <div
-        className="w-25"
+        className=""
         style={{
           height: "300px",
         }}
       >
         <div className="d-flex flex-column gap-3">
-          <h1 className="display-6 fw-bold text-center">Register</h1>
+          <h1 className="display-6 fw-bold text-center">Register Admin</h1>
 
           <TextInput
             label="Username"
@@ -64,4 +67,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default RegisterAdmin;

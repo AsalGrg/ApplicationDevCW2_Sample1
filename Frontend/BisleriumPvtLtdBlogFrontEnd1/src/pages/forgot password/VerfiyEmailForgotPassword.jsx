@@ -1,21 +1,36 @@
-import React, { useEffect } from 'react'
-import Loading from '../../components/global/Loading';
-import { useParams } from 'react-router';
+import React, { useEffect, useState } from "react";
+import Loading from "../../components/global/Loading";
+import { useNavigate, useParams } from "react-router";
+import verify_email_forgot_password from "../../services/verify_email_forgot_password";
+import { Button, Text, TextInput } from "@mantine/core";
+import { useSearchParams } from "react-router-dom";
+import change_forgot_password from "../../services/verify_email_forgot_password";
 
 const VerfiyEmailForgotPassword = () => {
-    const { token, email } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [password, setpassword] = useState('')
+
+  const navigate = useNavigate();
+
+  const email = searchParams.get("email");
+  let token = searchParams.get("token");
+
+  token = token.replace(/\s+/g, "+");
 
   console.log(token);
 
-  useEffect(() => {
-    function verifyEmail() {
-      if (token !== null) {
-      }
+  async function changeForgotPassword() {
+    const forgotPasswordData = {
+      changedPassword: password,
+      email: email,
+      token: token
     }
+    const res = await change_forgot_password(forgotPasswordData);
 
-    verifyEmail();
-
-  }, []);
+    if(res.ok){
+      return navigate('/login');
+    }
+  }
 
   return (
     <div
@@ -24,8 +39,20 @@ const VerfiyEmailForgotPassword = () => {
         minHeight: "600px",
       }}
     >
-      {token !== "null" ? (
-        <Loading />
+      {token.length > 1 ? (
+        <div className="d-flex flex-column gap-3">
+          <Text size="lg" fw={700} className="text-center">
+            Enter a new password
+          </Text>
+          <TextInput label="New password" placeholder="Enter new password" 
+          onChange={(e)=> setpassword(e.target.value)}
+          value={password}
+          />
+
+          <Button
+          onClick={changeForgotPassword}
+          >Enter</Button>
+        </div>
       ) : (
         <p className="lead">
           Click on the link sent on <span className="fw-bold">{email}</span> to
@@ -34,6 +61,6 @@ const VerfiyEmailForgotPassword = () => {
       )}
     </div>
   );
-}
+};
 
-export default VerfiyEmailForgotPassword
+export default VerfiyEmailForgotPassword;

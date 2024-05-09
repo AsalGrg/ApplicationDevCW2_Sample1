@@ -2,12 +2,12 @@ import { Text } from '@mantine/core';
 import React, { useState } from 'react'
 import { BiDownvote } from "react-icons/bi";
 
-const DownvoteBtn = () => {
-    const [isActive, setisActive] = useState(false);
+const DownvoteBtn = ({reactionDetails, noOfDownvotes, handleReaction}) => {
 
     function handleActiveStatus(){
-      setisActive(prev=>!prev);
+      handleReaction("Downvote")
     }
+  
     return (
       <div
         className="d-flex cursor-pointer"
@@ -15,12 +15,12 @@ const DownvoteBtn = () => {
           fontSize: "25px",
         }}
       >
-        {isActive ? <BiDownvote className="text-primary" 
+        {reactionDetails.ReactionName==="Downvote"?  <BiDownvote className="text-primary" 
         onClick={handleActiveStatus}
         /> : <BiDownvote
         onClick={handleActiveStatus}
         />}
-        <Text>10</Text>
+        <Text>{noOfDownvotes}</Text>
       </div>
     );
   };

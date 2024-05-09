@@ -5,15 +5,13 @@ export default async function loginUser(
 ){
     const api_url= api_urls.login();
 
-    console.log(api_url)
+    console.log(userLoginData)
     
     const res = await fetch(api_url,
     {   
         method: 'POST',
-        headers:{
-            "Access-Control-Allow-Origin": "*"
-        },
-        body:userLoginData
+        body:new Blob([JSON.stringify(userLoginData)], {type: 'application/json'})
+
     })
     return res;
 }
