@@ -5,9 +5,8 @@ namespace BisleriumPvtLtdBackendSample1.ServiceInterfaces
 {
     public interface IUserService
     {
-        //for testing
-        LoginUserResponse LoginUser(LoginUserDto loginUserDto);
+        void UpdateLastNotificationCheckedTime();
 
-        User RegisterUser(RegisterUserDto registerUser);
+        Task<CompleteUserDetails> GetCompleteUserDetails();
     }
 }

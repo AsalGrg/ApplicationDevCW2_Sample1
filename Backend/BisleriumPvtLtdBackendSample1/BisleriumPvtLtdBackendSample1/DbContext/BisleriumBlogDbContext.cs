@@ -1,12 +1,14 @@
 ﻿using BisleriumPvtLtdBackendSample1.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace BisleriumPvtLtdBackendSample1
+namespace BisleriumPvtLtdBackendSample1.DbContext
 {
-    public class BisleriumBlogDbContext:DbContext
+    public class BisleriumBlogDbContext : IdentityDbContext
     {
-        public BisleriumBlogDbContext(DbContextOptions dbContextOptions): base(dbContextOptions) { 
-        
+        public BisleriumBlogDbContext(DbContextOptions dbContextOptions) : base(dbContextOptions)
+        {
+
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,12 +34,13 @@ namespace BisleriumPvtLtdBackendSample1
             base.OnModelCreating(modelBuilder);
         }
 
-        public DbSet<Roles> Roles{ get; set; }
-        public DbSet<User> Users{ get; set; }
-        public DbSet<Blog> Blogs{ get; set; }
+        /*public DbSet<Roles> Roles{ get; set; }
+        public DbSet<User> Users{ get; set; }*/
+        public DbSet<Blog> Blogs { get; set; }
         public DbSet<ReactionType> ReactionTypes { get; set; }
-        public DbSet<BlogReaction> BlogReactions  { get; set; }
-        public DbSet<Comment> Comments{ get; set; }
-        public DbSet<CommentReaction> CommentReactions{ get; set; }
+        public DbSet<BlogReaction> BlogReactions { get; set; }
+        public DbSet<Comment> Comments { get; set; }
+        public DbSet<CommentReaction> CommentReactions { get; set; }
+        public DbSet<NotificationCheckedTiming> NotificationCheckedTimings { get; set; }
     }
 }

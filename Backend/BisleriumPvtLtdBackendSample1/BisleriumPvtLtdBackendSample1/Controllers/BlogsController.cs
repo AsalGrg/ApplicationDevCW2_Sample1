@@ -1,12 +1,12 @@
 ﻿using BisleriumPvtLtdBackendSample1.DTOs;
 using BisleriumPvtLtdBackendSample1.DTOs.Blog;
 using BisleriumPvtLtdBackendSample1.ServiceInterfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BisleriumPvtLtdBackendSample1.Controllers
 {
-
 
     [Route("api/[controller]")]
     [ApiController]
@@ -20,17 +20,21 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateBlog([FromForm] AddBlogRequest addBlogRequest)
+        [Authorize(Roles ="Blogger")]
+        public async Task<IActionResult> CreateBlog([FromForm] AddBlogRequest addBlogRequest)
         {
-            if (addBlogRequest.UserId== null) { BadRequest(); }
-            return Ok(_blogService.AddNewBlog(addBlogRequest));
+            if (addBlogRequest.CoverImage.Length > 3 * 1024 * 1024)//3MB
+                return BadRequest("Image file above 3MB");
+
+            return Ok(await _blogService.AddNewBlog(addBlogRequest));
         }
 
         [HttpPut]
         [Route("/{id}")]
-        public IActionResult EditBlog([FromRoute] Guid id,[FromForm] AddBlogRequest addBlogRequest)
+        [Authorize(Roles ="Blogger")]
+        public async Task<IActionResult> EditBlog([FromRoute] Guid id,[FromForm] AddBlogRequest addBlogRequest)
         {
-            BlogDetails updatedDetails=  _blogService.EditBlog(addBlogRequest, id);
+            BlogDetails updatedDetails=  await _blogService.EditBlog(addBlogRequest, id);
 
             if (updatedDetails==null)
             {
@@ -41,10 +45,19 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
         }
 
         [HttpGet]
-        [Route("/{id}")]
-        public IActionResult GetBlogDetails([FromRoute] Guid id, [FromQuery] Guid? userId)
+        [Route("/getBlogsFilter/{filter}")]
+        public IActionResult GetFilterBlogs([FromRoute] string filter)
         {
-            BlogDetails deletedBlog = _blogService.GetBlogDetails(id, userId);
+            return Ok(_blogService.GetAllFilterBlogs(filter));
+        }
+
+        [HttpGet]
+        [Route("/{id}")]
+        [AllowAnonymous]
+        [Authorize]
+        public IActionResult GetBlogDetails([FromRoute] Guid id)
+        {
+            BlogDetails deletedBlog = _blogService.GetBlogDetails(id);
             if (deletedBlog == null)
             {
                 return BadRequest();
@@ -54,10 +67,11 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
 
 
         [HttpDelete]
-        [Route("/{id}/{userId}")]
-        public IActionResult DeleteBlog([FromRoute] Guid id, [FromRoute] Guid userId)
+        [Route("/{id}")]
+        [Authorize]
+        public IActionResult DeleteBlog([FromRoute] Guid id)
         {
-            BlogDetails deletedBlog = _blogService.DeleteBlog(id,userId);
+            BlogDetails deletedBlog = _blogService.DeleteBlog(id);
             if (deletedBlog == null)
             {
                 return BadRequest();
@@ -68,9 +82,10 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
 
         [HttpPost]
         [Route("/addReaction")]
+        [Authorize]
         public IActionResult AddBlogReaction([FromBody] AddReactionDto addReactionDto)
         {
-            EachNotificationDetails eachNotification = _blogService.AddBlogReaction(addReactionDto);
+            UserBlogReactionDetail eachNotification = _blogService.AddBlogReaction(addReactionDto);
 
             if (eachNotification == null)
             {
@@ -81,6 +96,7 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
 
         [HttpDelete]
         [Route("/deleteReaction/{reactionId}")]
+        [Authorize]
         public IActionResult DeleteBlogReaction([FromRoute] Guid reactionId)
         {
             EachNotificationDetails eachNotification= _blogService.DeleteBlogReaction(reactionId);
@@ -93,15 +109,17 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
 
         [HttpPut]
         [Route("/updateReaction/{reactionId}")]
+        [Authorize]
         public IActionResult UpdateBlogReaction([FromRoute] Guid reactionId, [FromBody] AddReactionDto addReactionDto)
         {
-            EachNotificationDetails eachNotification = _blogService.UpdateBlogReaction(reactionId, addReactionDto);
+            UserBlogReactionDetail eachNotification = _blogService.UpdateBlogReaction(reactionId, addReactionDto);
             if (eachNotification == null)
             {
                 return BadRequest();
             }
             return Ok(eachNotification);
         }
+
 
     }
 }

@@ -8,5 +8,7 @@ namespace BisleriumPvtLtdBackendSample1.DTOs
         public string UserDp {  get; set; }
         public string NotificationType {  get; set; }//can be commnet or react
         public DateTime AddedDate {  get; set; }
+        public bool isNew {  get; set; }= false;
+        public string? Body { get; set; }
     }
 }

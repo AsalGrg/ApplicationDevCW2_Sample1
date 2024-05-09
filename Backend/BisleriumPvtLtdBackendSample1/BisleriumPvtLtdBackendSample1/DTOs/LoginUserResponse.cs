@@ -2,10 +2,9 @@
 {
     public class LoginUserResponse
     {
-        public Guid Id { get; set; }
+        public string Id { get; set; }
         public bool IsAdmin { get; set; }
-        public string Username { get; set; }
-        public string UserDp {  get; set; }
+        public string accessToken { get; set; }
 
     }
 }

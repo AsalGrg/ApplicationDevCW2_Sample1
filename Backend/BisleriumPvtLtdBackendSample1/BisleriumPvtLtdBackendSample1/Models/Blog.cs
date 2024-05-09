@@ -1,4 +1,6 @@
-﻿namespace BisleriumPvtLtdBackendSample1.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace BisleriumPvtLtdBackendSample1.Models
 {
     public class Blog
     {
@@ -7,9 +9,9 @@
         public string Title {  get; set; }
         public string Body { get; set; }
         public DateTime AddedDate { get; set; }
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         //Navigation Properties
-        public User User { get; set; }
+        public IdentityUser User { get; set; }
     }
 }

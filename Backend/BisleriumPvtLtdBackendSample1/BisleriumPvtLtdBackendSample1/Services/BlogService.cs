@@ -1,8 +1,14 @@
-﻿using BisleriumPvtLtdBackendSample1.DTOs;
+﻿using BisleriumPvtLtdBackendSample1.DbContext;
+using BisleriumPvtLtdBackendSample1.DTOs;
 using BisleriumPvtLtdBackendSample1.DTOs.Blog;
 using BisleriumPvtLtdBackendSample1.DTOs.Comment;
 using BisleriumPvtLtdBackendSample1.Models;
 using BisleriumPvtLtdBackendSample1.ServiceInterfaces;
+using Microsoft.AspNetCore.Identity;
+using System.Collections;
+using System.Globalization;
+using System.Security.Claims;
+using System.Web;
 
 namespace BisleriumPvtLtdBackendSample1.Services
 {
@@ -10,31 +16,34 @@ namespace BisleriumPvtLtdBackendSample1.Services
     {
         private BisleriumBlogDbContext _dbContext;
         private ICommentService _commentService;
+        private FileUploadService _fileUploadService;
 
-        public BlogService(BisleriumBlogDbContext dbContext, ICommentService commentService)
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+
+
+        public BlogService(BisleriumBlogDbContext dbContext, ICommentService commentService, UserManager<IdentityUser> userManager,
+            IHttpContextAccessor httpContextAccessor, FileUploadService fileUploadService)
         {
             _dbContext = dbContext;
             _commentService = commentService;
+            _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
+            _fileUploadService = fileUploadService;
         }
 
 
-        public BlogDetails GetBlogDetails(Guid blogId, Guid? accessingUserId)
+        public BlogDetails GetBlogDetails(Guid blogId)
         {
-            System.Diagnostics.Debug.WriteLine("dobeee");
-            System.Diagnostics.Debug.WriteLine(blogId);
-            System.Diagnostics.Debug.WriteLine(accessingUserId);
-            
-            System.Diagnostics.Debug.WriteLine("dobeee");
+            string accessingUserId = getCurrentUser();
 
             Blog blog = _dbContext.Blogs.FirstOrDefault(each => each.Id == blogId);
 
-            System.Diagnostics.Debug.WriteLine("Yerrrra");
-            System.Diagnostics.Debug.WriteLine(blog.Title);
+            IdentityUser author = _dbContext.Users.FirstOrDefault(each => each.Id == blog.UserId);
 
-            User author = _dbContext.Users.FirstOrDefault(each => each.Id == blog.UserId);
-
-            System.Diagnostics.Debug.WriteLine(author.Name);
+            System.Diagnostics.Debug.WriteLine(author.UserName);
             bool hasReacted = false;
+            bool isAuthor = false;
             UserBlogReactionDetail blogReactionDetail = null;
 
 
@@ -42,8 +51,7 @@ namespace BisleriumPvtLtdBackendSample1.Services
 
             if (accessingUserId != null)
             {
-                System.Diagnostics.Debug.WriteLine("Yerrrra YYYEYEYE");
-
+                if (accessingUserId.Equals(blog.UserId)) isAuthor = true;
                 BlogReaction userBlogReaction = _dbContext.BlogReactions.FirstOrDefault(each => each.BlogId == blogId && each.UserId == accessingUserId);
 
                 if (userBlogReaction != null)
@@ -58,6 +66,8 @@ namespace BisleriumPvtLtdBackendSample1.Services
             }
             return new BlogDetails()
             {
+                Id = blogId,
+                isAuthor= isAuthor,
                 Title = blog.Title,
                 Body = blog.Body,
                 CoverImage = blog.CoverImage,
@@ -68,7 +78,7 @@ namespace BisleriumPvtLtdBackendSample1.Services
                 AuthorDetails = new(){
                     UserDp = "",
                     UserId = author.Id,
-                    Username = author.Name,
+                    Username = author.UserName,
                 },
 
                 BlogComments = blogComments,
@@ -111,17 +121,20 @@ namespace BisleriumPvtLtdBackendSample1.Services
         }
         //utility methods ends
 
-        public EachNotificationDetails AddBlogReaction(AddReactionDto addReactionDto)
+        public UserBlogReactionDetail AddBlogReaction(AddReactionDto addReactionDto)
         {
+
+            var user = _httpContextAccessor.HttpContext.User;
+            string userId = _userManager.GetUserId(user);
 
             ReactionType reactionType = _dbContext.ReactionTypes.First(each => each.Title == addReactionDto.ReactionType);
             Blog blog = _dbContext.Blogs.First(each => each.Id == addReactionDto.BlogId);
-            User user = _dbContext.Users.First(each => each.Id == addReactionDto.UserId);
+
 
             BlogReaction savedReaction = _dbContext.Add(
                 new BlogReaction()
                 {
-                    User= user,
+                    UserId= userId,
                     ReactionType = reactionType,
                     Blog= blog,
                 }
@@ -130,19 +143,24 @@ namespace BisleriumPvtLtdBackendSample1.Services
             _dbContext.SaveChanges();
 
 
-            return ChangeToNotificationDetails(savedReaction);
+            return new()
+            {
+                ReactionId = savedReaction.Id,
+                ReactionName = addReactionDto.ReactionType
+            };
         }
 
-        public BlogDetails AddNewBlog(AddBlogRequest addBlogRequest)
+        public async Task<BlogDetails> AddNewBlog(AddBlogRequest addBlogRequest)
         {
-            Blog addedBlog = _dbContext.Add(
-                new Blog() { 
+             string userId = getCurrentUser();
 
+            Blog addedBlog = _dbContext.Add(
+                new Blog() {
                     Title = addBlogRequest.Title,
                     Body = addBlogRequest.Body,
-                    CoverImage= addBlogRequest.CoverImage.FileName,
+                    CoverImage= await _fileUploadService.UploadFileAsync(addBlogRequest.CoverImage),
                     AddedDate= DateTime.Now,
-                    User = _dbContext.Users.FirstOrDefault(each => each.Id== addBlogRequest.UserId)
+                    UserId= userId
                 }
                 ).Entity;
 
@@ -151,8 +169,9 @@ namespace BisleriumPvtLtdBackendSample1.Services
             return ChangeBlogModalToBlogDetails( addedBlog );
         }
 
-        public BlogDetails DeleteBlog(Guid blogId, Guid UserId)
+        public BlogDetails DeleteBlog(Guid blogId)
         {
+            string UserId = getCurrentUser();
             Blog blog= _dbContext.Blogs.First(each => each.Id==blogId);
 
             if (!blog.UserId.Equals(UserId)) return null;
@@ -172,33 +191,36 @@ namespace BisleriumPvtLtdBackendSample1.Services
         }
 
 
-        public EachNotificationDetails UpdateBlogReaction(Guid reactionId,AddReactionDto addReactionDto)
+        public UserBlogReactionDetail UpdateBlogReaction(Guid reactionId,AddReactionDto addReactionDto)
         {
             BlogReaction blogReaction = _dbContext.BlogReactions.FirstOrDefault(each => each.Id == reactionId);
 
             blogReaction.ReactionType= _dbContext.ReactionTypes.FirstOrDefault(each => each.Title== addReactionDto.ReactionType );
-            BlogReaction removedBlogReaction = _dbContext.Update(blogReaction).Entity;
+            BlogReaction updatedBlogReaction = _dbContext.Update(blogReaction).Entity;
             _dbContext.SaveChanges();
-            return ChangeToNotificationDetails(removedBlogReaction);
+            return new()
+            {
+                ReactionId = updatedBlogReaction.Id,
+                ReactionName = addReactionDto.ReactionType
+            }; ;
         }
 
 
 
-        public BlogDetails EditBlog(AddBlogRequest addBlogRequest, Guid blogId)
+        public async Task<BlogDetails> EditBlog(AddBlogRequest addBlogRequest, Guid blogId)
         {
             bool hasError = false;
 
+            string currentUserId = getCurrentUser();
+
             Blog existingBlog = _dbContext.Blogs.FirstOrDefault(b => b.Id == blogId);
 
-            System.Diagnostics.Debug.WriteLine(addBlogRequest.UserId);
-            System.Diagnostics.Debug.WriteLine(existingBlog.UserId);
-            if (!addBlogRequest.UserId.Equals(existingBlog.UserId)) return null;
+            if (!currentUserId.Equals(existingBlog.UserId)) return null;
 
 
             existingBlog.Title = addBlogRequest.Title;
             existingBlog.Body = addBlogRequest.Body;
-            existingBlog.CoverImage = addBlogRequest.CoverImage.FileName;
-
+            existingBlog.CoverImage = addBlogRequest.CoverImage!=null? await _fileUploadService.UploadFileAsync(addBlogRequest.CoverImage): existingBlog.CoverImage;
 
             Blog updatedBlog = _dbContext.Update(existingBlog).Entity;
 
@@ -217,11 +239,12 @@ namespace BisleriumPvtLtdBackendSample1.Services
         private BlogDetails ChangeBlogModalToBlogDetails (Blog blog)
         {
 
-            User blogAuthor = _dbContext.Users.FirstOrDefault(each => (
+            IdentityUser blogAuthor = _dbContext.Users.FirstOrDefault(each => (
                                 each.Id == blog.UserId
                                 ));
             return new()
             {
+                Id= blog.Id,
                 Body = blog.Body,
                 Title = blog.Title,
                 CoverImage = blog.CoverImage,
@@ -229,7 +252,7 @@ namespace BisleriumPvtLtdBackendSample1.Services
                 AuthorDetails = new()
                 {
                     UserId = blogAuthor.Id,
-                    Username = blogAuthor.Name,
+                    Username = blogAuthor.UserName,
                     UserDp=""
                 }
             };
@@ -242,10 +265,99 @@ namespace BisleriumPvtLtdBackendSample1.Services
                 AddedDate = blogReaction.AddedDate,
                 NotificationType = "Reaction",
                 UserDp = "",
-                Username = _dbContext.Users.First(each => each.Id == blogReaction.UserId).Name
+                Username = _dbContext.Users.First(each => each.Id == blogReaction.UserId).UserName
             };
         }
+        private string getCurrentUser()
+    {
+            var user = _httpContextAccessor.HttpContext.User;
+            string userId = _userManager.GetUserId(user);
 
-     
+            return userId;
+        }
+
+        public List<Blog> GetUserBlogs(string userId)
+        {
+
+            return _dbContext.Blogs.Where(each => each.UserId == userId).ToList();
+        }
+
+        public List<BlogDetails> GetAllFilterBlogs(string filter)
+        {
+            
+            List<Blog> allBlogs = _dbContext.Blogs.ToList();
+
+            List<BlogDetails> blogDetails = new();
+            foreach (var blog in allBlogs)
+            {
+                blogDetails.Add(GetBlogDetails(blog.Id));
+            }
+
+            if (filter == "Random")
+            {
+                return blogDetails;
+            }
+            else if (filter== "Recency")
+            {
+                blogDetails = blogDetails.OrderByDescending(b => b.CreatedDate).ToList();
+            }
+            else if (filter == "Popularity")
+            {
+                blogDetails = blogDetails.OrderByDescending(b => b.BlogPopularityCalculation).ToList();
+            }
+
+            return blogDetails;
+
+        }
+
+        public TimeAnalysisDetails GetTotalTimeAnalysis(TimeAnalysisRequest timeAnalysisRequest)
+        {
+
+            List<Blog> allBlogs = new();
+            List<BlogDetails> blogDetails = new();
+
+
+            int totalUpvotes = 0;
+            int totalDownvotes = 0;
+            int noOfComments = 0;
+
+            if(timeAnalysisRequest.SelectedDateOption=="All Time")
+            {
+                allBlogs = GetAllBlogs();
+            }else if(timeAnalysisRequest.SelectedDateOption == "Select Date")
+            {
+                string inputString = timeAnalysisRequest.SelectedCalendarDate;
+                string formatString = "yyyy-MM-dd";
+
+                int monthNumber;
+                int year;
+
+                if (DateTime.TryParseExact(inputString, formatString, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime dateTime))
+                {
+                    allBlogs = _dbContext.Blogs.Where(each => each.AddedDate.Month.Equals(dateTime.Month) && each.AddedDate.Year.Equals(dateTime.Year)).ToList();
+                }
+            }
+
+            foreach (var blog in allBlogs)
+            {
+                totalUpvotes += CalculateNoOfReactions(blog.Id, "Upvote");
+                totalDownvotes +=CalculateNoOfReactions(blog.Id, "Downvote");
+                noOfComments +=GetNoOfComments(blog.Id);
+                blogDetails.Add(GetBlogDetails(blog.Id));
+
+            }
+            return new()
+            {
+                TopBlogs= blogDetails
+                          .OrderByDescending(b => b.BlogPopularityCalculation)
+                          .Take(10)
+                          .ToList(),
+                TotalComments = noOfComments,
+                TotalDownvotes= totalDownvotes,
+                TotalUpvotes= totalUpvotes,
+                TotalPosts= blogDetails.Count,
+            };
+        }
     }
+
 }
