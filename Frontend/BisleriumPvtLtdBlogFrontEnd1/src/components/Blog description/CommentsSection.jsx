@@ -4,6 +4,7 @@ import EachComment from "./EachComment";
 import { IoMdSend } from "react-icons/io";
 import { add_comment } from "../../services/addComment";
 import { useParams } from "react-router";
+import { delete_comment } from "../../services/deleteComment";
 
 const CommentsSection = ({ blogDescription }) => {
   const { id } = useParams();
@@ -26,8 +27,18 @@ const CommentsSection = ({ blogDescription }) => {
       if (res.ok) {
         const data = await res.json();
         console.log(data)
+        setcomment('')
         setcomments([...comments, data]);
       }
+    }
+  }
+
+  async function deleteComment(commentId){
+    const res= await delete_comment(commentId);
+
+    if(res.ok){
+      const newList= comments.filter(each=> each.CommentId!==commentId);
+      setcomments(newList);
     }
   }
 
@@ -50,7 +61,7 @@ const CommentsSection = ({ blogDescription }) => {
       />
       <div className="d-flex flex-column gap-5 mt-3">
         {comments.map((each) => (
-          <EachComment commentDescription={each} />
+          <EachComment commentDescription={each} deleteComment={deleteComment}/>
         ))}
       </div>
     </section>

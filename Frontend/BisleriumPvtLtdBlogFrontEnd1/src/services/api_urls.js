@@ -18,6 +18,7 @@ const api_urls= {
     deleteCommentReaction: (reactionId)=> `${BASE_URL}/deleteCommentReaction/${reactionId}`,
     addComment: ()=> `${BASE_URL}/addComment`,
     editComment: ()=> `${BASE_URL}/editComment`,
+    deleteComment: (commentId)=> `${BASE_URL}/deleteComment/${commentId}`,
     addBlog: ()=> `${BASE_URL}/api/blogs`,
     editBlog: (id)=>`${BASE_URL}/${id}`,
     updateUserProfile: ()=>  `${BASE_URL}/api/CustomUser/updateUserDetails`,
