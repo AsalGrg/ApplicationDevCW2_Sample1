@@ -7,6 +7,7 @@ namespace BisleriumPvtLtdBackendSample1.ServiceInterfaces
     {
         public EachCommentDetail AddComment(AddCommentRequestDto addComment);
         public EachCommentDetail EditComment(AddCommentRequestDto addCommentRequestDto);
+        public string DeleteComment(Guid commentId);
         public List<EachCommentDetail> GetAllBlogComments(Guid blogId, string? accessingUserId);
         public UserCommentReactionDetail AddCommentReaction(AddCommentReactionDto addCommentReaction);
         public EachNotificationDetails DeleteCommentReaction(Guid reactionId);

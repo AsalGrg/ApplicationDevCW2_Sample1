@@ -46,6 +46,20 @@ namespace BisleriumPvtLtdBackendSample1.Controllers
             return Ok(commentResponse);
         }
 
+        [HttpDelete]
+        [Route("/deleteComment/{commentId}")]
+        [Authorize]
+        public IActionResult DeleteComment([FromRoute] Guid commentId)
+        {
+            string commentResponse = _commentService.DeleteComment(commentId);
+
+            if (commentResponse == null)
+            {
+                return BadRequest();
+            }
+            return Ok(commentResponse);
+        }
+
         [HttpPost]
         [Route("/addCommentReaction")]
         [Authorize]

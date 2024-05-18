@@ -211,5 +211,21 @@ namespace BisleriumPvtLtdBackendSample1.Services
 
             return userId;
         }
+
+        public string DeleteComment(Guid commentId)
+        {
+
+            string UserId = getCurrentUser();
+            Comment comment = _dbContext.Comments.First(each => each.Id == commentId);
+
+            if (!comment.UserId.Equals(UserId)) return null;
+            var commentReactions = _dbContext.CommentReactions.Where(each => each.CommentId == comment.Id).ToList();
+            _dbContext.CommentReactions.RemoveRange(commentReactions);
+
+            _dbContext.Remove(comment);
+            _dbContext.SaveChanges();
+
+            return "Comment deleted successfully";
+        }
     }
 }

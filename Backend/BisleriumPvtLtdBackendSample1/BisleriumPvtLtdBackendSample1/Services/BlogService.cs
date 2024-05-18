@@ -5,6 +5,7 @@ using BisleriumPvtLtdBackendSample1.DTOs.Comment;
 using BisleriumPvtLtdBackendSample1.Models;
 using BisleriumPvtLtdBackendSample1.ServiceInterfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Collections;
 using System.Globalization;
 using System.Security.Claims;
@@ -176,6 +177,18 @@ namespace BisleriumPvtLtdBackendSample1.Services
 
             if (!blog.UserId.Equals(UserId)) return null;
 
+            var reactions = _dbContext.BlogReactions.Where(each => each.BlogId == blogId).ToList();
+
+            _dbContext.BlogReactions.RemoveRange(reactions);
+
+            var comments = _dbContext.Comments.Where(each => each.BlogId==blogId).ToList();
+            foreach (var comment in comments)
+            {
+                var commentReactions = _dbContext.CommentReactions.Where(each => each.CommentId == comment.Id).ToList();
+                _dbContext.CommentReactions.RemoveRange(commentReactions);
+            }
+
+            _dbContext.Comments.RemoveRange(comments);
             _dbContext.Remove(blog);
             _dbContext.SaveChanges();
 
